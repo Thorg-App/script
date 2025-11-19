@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Double current inotify limits and save to /etc/sysctl.d/99-inotify.conf
+
+write_and_apply_config() {
+  local CONFIG_FILE="/etc/sysctl.d/99-inotify.conf"
+  local new_watches=$1
+  local new_instances=$2
+  local new_events=$3
+
+  echo "Writing to $CONFIG_FILE..."
+
+  # Write config file
+  tee "$CONFIG_FILE" > /dev/null <<EOF
+# Inotify limits for file watching (doubled on $(date +%Y-%m-%d))
+fs.inotify.max_user_watches = $new_watches
+fs.inotify.max_user_instances = $new_instances
+fs.inotify.max_queued_events = $new_events
+EOF
+
+  # Apply changes
+  echo "Applying changes..."
+  sysctl -p "$CONFIG_FILE"
+}
+export -f write_and_apply_config
+
+main() {
+  # Get current values
+  max_watches=$(sysctl -n fs.inotify.max_user_watches)
+  max_instances=$(sysctl -n fs.inotify.max_user_instances)
+  max_events=$(sysctl -n fs.inotify.max_queued_events)
+
+  # Double them
+  new_watches=$((max_watches * 2))
+  new_instances=$((max_instances * 2))
+  new_events=$((max_events * 2))
+
+  # Show what we're doing
+  echo "Current limits:"
+  echo "  max_user_watches:    $max_watches -> $new_watches"
+  echo "  max_user_instances:  $max_instances -> $new_instances"
+  echo "  max_queued_events:   $max_events -> $new_events"
+  echo
+
+  # Run the privileged operations together
+
+  echo "We are about to ask for [sudo] as we are going to modify the inotify system configuration."
+  echo "Make sure you have looked over the script, especially that it's asking sudo access."
+  echo "The script you are running can be found at:"
+  echo "https://raw.githubusercontent.com/Thorg-App/script/refs/heads/main/troubleshoot/linux/inotify/inotify_double_current_limits.sh"
+  echo ""
+  sudo -E bash -c "write_and_apply_config $new_watches $new_instances $new_events"
+
+  # Verify
+  echo
+  echo "Verification:"
+  sysctl fs.inotify.max_user_watches
+  sysctl fs.inotify.max_user_instances
+  sysctl fs.inotify.max_queued_events
+}
+
+main "${@}"
