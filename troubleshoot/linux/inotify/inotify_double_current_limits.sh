@@ -3,28 +3,6 @@ set -euo pipefail
 
 # Double current inotify limits and save to /etc/sysctl.d/99-inotify.conf
 
-write_and_apply_config() {
-  local CONFIG_FILE="/etc/sysctl.d/99-inotify.conf"
-  local new_watches=$1
-  local new_instances=$2
-  local new_events=$3
-
-  echo "Writing to $CONFIG_FILE..."
-
-  # Write config file
-  tee "$CONFIG_FILE" > /dev/null <<EOF
-# Inotify limits for file watching (doubled on $(date +%Y-%m-%d))
-fs.inotify.max_user_watches = $new_watches
-fs.inotify.max_user_instances = $new_instances
-fs.inotify.max_queued_events = $new_events
-EOF
-
-  # Apply changes
-  echo "Applying changes..."
-  sysctl -p "$CONFIG_FILE"
-}
-export -f write_and_apply_config
-
 main() {
   # Get current values
   max_watches=$(sysctl -n fs.inotify.max_user_watches)
@@ -43,14 +21,26 @@ main() {
   echo "  max_queued_events:   $max_events -> $new_events"
   echo
 
-  # Run the privileged operations together
-
   echo "We are about to ask for [sudo] as we are going to modify the inotify system configuration."
   echo "Remember to [Review Scripts from Internet Prior to Running Them](https://notes.thorg.app/notes/rqpzs1z92lkzz79d8pjltdj). Especially that this script is asking for sudo access."
   echo "The script you are running can be found at:"
   echo "https://raw.githubusercontent.com/Thorg-App/script/refs/heads/main/troubleshoot/linux/inotify/inotify_double_current_limits.sh"
   echo ""
-  sudo -E bash -c "write_and_apply_config $new_watches $new_instances $new_events"
+
+  # Write and apply config inline with sudo
+  local CONFIG_FILE="/etc/sysctl.d/99-inotify.conf"
+
+  echo "Writing to $CONFIG_FILE..."
+  sudo tee "$CONFIG_FILE" > /dev/null <<EOF
+# Inotify limits for file watching (doubled on $(date +%Y-%m-%d))
+fs.inotify.max_user_watches = $new_watches
+fs.inotify.max_user_instances = $new_instances
+fs.inotify.max_queued_events = $new_events
+EOF
+
+  # Apply changes
+  echo "Applying changes..."
+  sudo sysctl -p "$CONFIG_FILE"
 
   # Verify
   echo
