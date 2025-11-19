@@ -89,7 +89,8 @@ inotify_usage() {
     echo
 }
 
-# If script is executed directly (not sourced), run the function
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    inotify_usage
-fi
+main() {
+  inotify_usage
+}
+
+main "${@}"
