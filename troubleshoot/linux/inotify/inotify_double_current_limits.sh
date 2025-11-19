@@ -37,7 +37,7 @@ main() {
   new_events=$((max_events * 2))
 
   # Show what we're doing
-  echo "Current limits:"
+  echo "### Limits: [current] -> [upcoming]:"
   echo "  max_user_watches:    $max_watches -> $new_watches"
   echo "  max_user_instances:  $max_instances -> $new_instances"
   echo "  max_queued_events:   $max_events -> $new_events"
@@ -46,7 +46,7 @@ main() {
   # Run the privileged operations together
 
   echo "We are about to ask for [sudo] as we are going to modify the inotify system configuration."
-  echo "Make sure you have looked over the script, especially that it's asking sudo access."
+  echo "Remember to [Review Scripts from Internet Prior to Running Them](https://notes.thorg.app/notes/rqpzs1z92lkzz79d8pjltdj). Especially that this script is asking for sudo access."
   echo "The script you are running can be found at:"
   echo "https://raw.githubusercontent.com/Thorg-App/script/refs/heads/main/troubleshoot/linux/inotify/inotify_double_current_limits.sh"
   echo ""
